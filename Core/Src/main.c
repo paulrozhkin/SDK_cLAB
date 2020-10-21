@@ -19,12 +19,17 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "i2c.h"
 #include "iwdg.h"
+#include "tim.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "trace.h"
+#include "string.h"
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,6 +60,36 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/**
+ * @brief   Scans trough the I2C for valid addresses, then prints the out with printf().
+ * @param   void
+ * @return  void
+ */
+void i2c_detect(void) {
+	uint8_t devices = 0u;
+
+	SDK_TRACE_Print("Searching for I2C devices on the bus from 0x03 to 0x80...\n");
+	/* Values outside 0x03 and 0x77 are invalid. */
+	for (uint8_t i = 0x03u; i < 0x77u; i++) {
+		uint8_t address = i << 1u;
+		/* In case there is a positive feedback, print it out. */
+		if (HAL_OK == HAL_I2C_IsDeviceReady(&hi2c1, address, 3u, 10u)) {
+			//char string[30];
+			//sprintf(string, "Device found: 0x%02X\n", address);
+			//SDK_TRACE_Print(string);
+			devices++;
+		}
+	}
+	/* Feedback of the total number of devices. */
+	if (0u == devices) {
+		SDK_TRACE_Print("No device found.\n");
+	} else {
+		char string[100];
+		sprintf(string, "Total found devices: %d\n", devices);
+		SDK_TRACE_Print(string);
+		//SDK_TRACE_Print("Total found devices:");
+	}
+}
 
 /* USER CODE END 0 */
 
@@ -87,6 +122,18 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_IWDG_Init();
+  MX_I2C1_Init();
+  MX_UART4_Init();
+  MX_UART5_Init();
+  MX_USART1_UART_Init();
+  MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
+  MX_USART6_UART_Init();
+  MX_I2C2_Init();
+  MX_I2C3_Init();
+  MX_TIM2_Init();
+  MX_TIM9_Init();
+  MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
 
   /* Do not remove this code below */
@@ -94,34 +141,51 @@ int main(void)
   SDK_TRACE_Start();
   /* Do not remove this code from above */
 
+  HAL_TIM_Base_Start_IT(&htim2);
+  HAL_TIM_Base_Start_IT(&htim9);
+  HAL_TIM_Base_Start_IT(&htim5);
+  HAL_TIM_PWM_Start_IT (&htim5, TIM_CHANNEL_1);
+
   SDK_TRACE_Timestamp(PRINT, 1);
-  SDK_TRACE_Print("%s","LEDs Blink test");
-  SDK_TRACE_Timestamp(PRINT, 0);
+  SDK_TRACE_Print("LEDs Blink test");
+  //SDK_TRACE_Timestamp(PRINT, 0);
   HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
+  //SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
   /* Place your code from here */
   /* Example of using LED tracing */
 
   for (int i = 0; i < 10; i++) {
 	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
-  	  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
+  	  //SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
   	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  	  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
+  	  //SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
   	  HAL_Delay(250);
   }
 
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
+  //SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
+  //SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
 
   SDK_TRACE_Timestamp(PRINT, 1);
   SDK_TRACE_Print("%s","Test passed");
   SDK_TRACE_Timestamp(PRINT, 0);
 
-  /* Example of sending debug messages */
+    /* Example of sending debug messages */
+    SDK_TRACE_Timestamp(PRINT, 1);
+    //SDK_TRACE_Print("Test passed");
+    SDK_TRACE_Timestamp(PRINT, 0);
 
-  SDK_TRACE_Print("%s%d%s%X", "Decimal value: ", 255, " Hex value: ", 255);
+    i2c_detect();
+
+    HAL_Delay(4000);
+    HAL_TIM_Base_Stop_IT(&htim2);
+    HAL_TIM_Base_Stop_IT(&htim9);
+    HAL_TIM_PWM_Stop_IT(&htim5, TIM_CHANNEL_1);
+    /* Place your code before here */
+    /* Do not remove this code below */
+    SDK_TRACE_Stop();
+    /* Do not remove this code from above */
 
   /* Place your code before here */
   /* Do not remove this code below */
@@ -186,7 +250,42 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+uint8_t timerValueTIM2 = 1;
+uint8_t timerValueTIM9 = 1;
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM2) {
+		//SDK_TRACE_Print("1");
+		SDK_TRACE_Timestamp(P0, timerValueTIM2);
 
+		if (timerValueTIM2 == 0) {
+			timerValueTIM2 = 1;
+		} else {
+			timerValueTIM2 = 0;
+		}
+	}
+
+	if (htim->Instance == TIM9) {
+		//SDK_TRACE_Print("1");
+		SDK_TRACE_Timestamp(P1, timerValueTIM9);
+
+		if (timerValueTIM9 == 0) {
+			timerValueTIM9 = 1;
+		} else {
+			timerValueTIM9 = 0;
+		}
+	}
+
+	if (htim->Instance == TIM5) {
+		//SDK_TRACE_Print("1");
+		SDK_TRACE_Timestamp(P2, 1);
+	}
+}
+
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef * htim)
+{
+	SDK_TRACE_Timestamp(P2, 0);
+}
 /* USER CODE END 4 */
 
 /**
