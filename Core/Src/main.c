@@ -94,34 +94,42 @@ int main(void)
   SDK_TRACE_Start();
   /* Do not remove this code from above */
 
-  SDK_TRACE_Timestamp(PRINT, 1);
-  SDK_TRACE_Print("%s","LEDs Blink test");
-  SDK_TRACE_Timestamp(PRINT, 0);
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
-  /* Place your code from here */
-  /* Example of using LED tracing */
+  uint8_t value_a = 10;
+  uint8_t value_b = 11;
 
-  for (int i = 0; i < 10; i++) {
-	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
-  	  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
-  	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  	  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
-  	  HAL_Delay(250);
-  }
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, value_a & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, (value_a >> 1) & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_2, (value_a >> 2) & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, (value_a >> 3) & 0x01);
 
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, value_b & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_7, (value_b >> 1) & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_8, (value_b >> 2) & 0x01);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_9, (value_b >> 3) & 0x01);
 
-  SDK_TRACE_Timestamp(PRINT, 1);
-  SDK_TRACE_Print("%s","Test passed");
-  SDK_TRACE_Timestamp(PRINT, 0);
 
-  /* Example of sending debug messages */
+  SDK_TRACE_Timestamp(P0, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0));
+  SDK_TRACE_Timestamp(P1, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1));
+  SDK_TRACE_Timestamp(P2, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2));
+  SDK_TRACE_Timestamp(P3, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5));
+  SDK_TRACE_Timestamp(P4, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6));
+  SDK_TRACE_Timestamp(P5, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7));
+  SDK_TRACE_Timestamp(P6, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8));
+  SDK_TRACE_Timestamp(P7, HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9));
 
-  SDK_TRACE_Print("%s%d%s%X", "Decimal value: ", 255, " Hex value: ", 255);
+  uint8_t readed_value_a = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_0);
+  readed_value_a = readed_value_a | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_1) << 1);
+  readed_value_a = readed_value_a | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_2) << 2);
+  readed_value_a = readed_value_a | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_5) << 3);
+
+  uint8_t readed_value_b = HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_6);
+  readed_value_b = readed_value_b | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) << 1);
+  readed_value_b = readed_value_b | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_8) << 2);
+  readed_value_b = readed_value_b | (HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9) << 3);
+
+  int result = readed_value_a + readed_value_b;
+  SDK_TRACE_Print("Result a+b: %d", result);
+
 
   /* Place your code before here */
   /* Do not remove this code below */
