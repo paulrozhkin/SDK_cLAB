@@ -54,7 +54,7 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
-
+void lab3_Handler(UART_HandleTypeDef *huart);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
