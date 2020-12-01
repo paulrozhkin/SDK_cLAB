@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "iwdg.h"
+#include "usart.h"
 #include "gpio.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -44,7 +45,16 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+uint8_t x = 0; // X UART2
+uint8_t y = 0; // Y UART2
+uint8_t transmitBuffer2[2]; // for X, Y UART2
+uint8_t receiveBuffer3[2]; // for X, Y UART3
+uint8_t transmitBuffer3[1];	// for function result UART3
+uint8_t receiveBuffer2[1]; // for function result UART2
+uint8_t readed_value_x;	// X UART3
+uint8_t readed_value_y; // Y UART3
+uint8_t result;	// function result UART3
+uint8_t readed_result;	// function result UART2
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -87,6 +97,8 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_IWDG_Init();
+  MX_USART2_UART_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* Do not remove this code below */
@@ -94,34 +106,28 @@ int main(void)
   SDK_TRACE_Start();
   /* Do not remove this code from above */
 
-  SDK_TRACE_Timestamp(PRINT, 1);
-  SDK_TRACE_Print("%s","LEDs Blink test");
-  SDK_TRACE_Timestamp(PRINT, 0);
-  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
-  /* Place your code from here */
-  /* Example of using LED tracing */
+  uint8_t value_x = 10; // set X
+  uint8_t value_y = 11; // set Y
+  // buffer for UART2 transmit
+  transmitBuffer2[0] = value_x;
+  transmitBuffer2[1] = value_y;
+  // buffer for UART3 receive
+  receiveBuffer3[0] = 0;
+  receiveBuffer3[1] = 0;
+  // buffer for UART2 receive
+  receiveBuffer2[0] = 0;
 
-  for (int i = 0; i < 10; i++) {
-	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_13);
-  	  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
-  	  HAL_GPIO_TogglePin(GPIOD, GPIO_PIN_15);
-  	  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
-  	  HAL_Delay(250);
-  }
+  SDK_TRACE_Timestamp(P0, 1);
 
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED1, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_13));
-  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, GPIO_PIN_RESET);
-  SDK_TRACE_Timestamp(LED3, HAL_GPIO_ReadPin(GPIOD, GPIO_PIN_15));
+  SDK_TRACE_Print("Value X (UART2): %d", value_x);
+  SDK_TRACE_Print("Value Y (UART2): %d", value_y);
+  // Interrupt activations
+  HAL_UART_Transmit_IT(&huart2, transmitBuffer2, 2);
+  HAL_UART_Receive_IT(&huart3, receiveBuffer3, 2);
+  HAL_Delay(1);
 
-  SDK_TRACE_Timestamp(PRINT, 1);
-  SDK_TRACE_Print("%s","Test passed");
-  SDK_TRACE_Timestamp(PRINT, 0);
 
-  /* Example of sending debug messages */
-
-  SDK_TRACE_Print("%s%d%s%X", "Decimal value: ", 255, " Hex value: ", 255);
+  SDK_TRACE_Timestamp(P0, 0);
 
   /* Place your code before here */
   /* Do not remove this code below */
@@ -187,6 +193,37 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+          if(huart == &huart3)
+          {
+        	  lab3_Handler(&huart3);
+          } else if (huart == &huart2)
+          {
+        	  lab3_Handler(&huart2);
+          }
+}
+
+void lab3_Handler(UART_HandleTypeDef *huart)
+{
+	if (huart == &huart3)
+	{
+		 readed_value_x = receiveBuffer3[0];
+		 readed_value_y = receiveBuffer3[1];
+		 result = readed_value_x^readed_value_y;
+		 SDK_TRACE_Print("Value X (UART3): %d", readed_value_x);
+		 SDK_TRACE_Print("Value Y (UART3): %d", readed_value_y);
+		 SDK_TRACE_Print("X XOR Y (UART3): %d", result);
+		 transmitBuffer3[0] = result;
+		 // our data is ready so we allow the reverse transfer
+		 HAL_UART_Transmit_IT(&huart3, transmitBuffer3, 1);
+		 HAL_UART_Receive_IT(&huart2, receiveBuffer2, 1);
+	} else if (huart == &huart2)
+	{
+	 	 readed_result = receiveBuffer2[0];
+		 SDK_TRACE_Print("X XOR Y (UART2): %d", readed_result);
+	}
+}
 /* USER CODE END 4 */
 
 /**
